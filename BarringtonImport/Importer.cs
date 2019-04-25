@@ -10,12 +10,14 @@ namespace BarringtonFile
     public class Importer
         {
         private Dictionary<String, List<Family>> families;
-        private Dictionary<String, Person> people;
+        private Dictionary<String, Person> peopleById;
+        private Dictionary<String, List<Person>> peopleByName;
 
         public Importer()
             {
             this.families = new Dictionary<String, List<Family>>();
-            this.people = new Dictionary<String, Person>();
+            this.peopleById = new Dictionary<String, Person>();
+            this.peopleByName = new Dictionary<String, List<Person>>();
             }
 
         const String startOfFamilyMarker = "***";
@@ -54,12 +56,58 @@ namespace BarringtonFile
 
             person.Id = String.Format("P{0}", this.idPerson++);
 
-            this.people[person.Id] = person;
-
             person.Birth = ParseEvent("born", text);
             person.Death = ParseEvent("died", text);
 
+            person = FindOrAdd(person);
+
             return person;
+            }
+
+        private void AddPerson(Person person)
+            {
+            this.peopleById[person.Id] = person;
+
+            List<Person> peopleWithName;
+            String canonicalName = person.Name.Canonical;
+            if (!this.peopleByName.TryGetValue(canonicalName, out peopleWithName))
+                {
+                peopleWithName = new List<Person>();
+                this.peopleByName[canonicalName] = peopleWithName;
+                }
+
+            peopleWithName.Add(person);
+            }
+
+        private Person FindPerson(Person person)
+            {
+            List<Person> peopleWithName;
+
+            if (this.peopleByName.TryGetValue(person.Name.Canonical, out peopleWithName))
+                {
+                foreach (Person curPerson in peopleWithName)
+                    {
+                    if (person.Equals(curPerson))
+                        {
+                        return curPerson;
+                        }
+                    }
+                }
+
+            return null;
+            }
+
+        private Person FindOrAdd(Person person)
+            {
+            Person foundPerson = FindPerson(person);
+
+            if (foundPerson == null)
+                {
+                AddPerson(person);
+                foundPerson = person;
+                }
+
+            return foundPerson;
             }
 
 #if false
@@ -322,7 +370,7 @@ namespace BarringtonFile
                             }
                         }
 #else
-                    foreach (KeyValuePair<String,Person> pair in this.people)
+                    foreach (KeyValuePair<String,Person> pair in this.peopleById)
                         {
                         ConnectParents(pair.Value);
                         }
@@ -438,7 +486,7 @@ namespace BarringtonFile
                     writer.WriteLine("2 VERS 5.5");
                     writer.WriteLine("2 FORM LINEAGE-LINKED");
 
-                    foreach (KeyValuePair<String, Person> pair in this.people)
+                    foreach (KeyValuePair<String, Person> pair in this.peopleById)
                         {
                         Person person = pair.Value;
 

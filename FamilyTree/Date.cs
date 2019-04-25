@@ -75,5 +75,34 @@ namespace FamilyTree
 
             return builder.ToString();
             }
+
+        public override bool Equals(object obj)
+            {
+            Date otherDate = obj as Date;
+            if (otherDate == null)
+                {
+                return false;
+                }
+
+            if (this.Day != otherDate.Day)
+                {
+                return false;
+                }
+            if (this.Month != otherDate.Month)
+                {
+                return false;
+                }
+            if (this.Year != otherDate.Year)
+                {
+
+                return false;
+                }
+            if (this.Julian != otherDate.Julian)
+                {
+                return false;
+                }
+
+            return true;
+            }
         }
     }

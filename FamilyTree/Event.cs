@@ -55,5 +55,51 @@ namespace FamilyTree
 
             return dateString;
             }
+
+        public override bool Equals(object obj)
+            {
+            Event otherEvent = obj as Event;
+
+            if (otherEvent == null)
+                return false;
+
+            if (this.Date1 != null)
+                {
+                if (!this.Date1.Equals(otherEvent.Date1))
+                    {
+                    return false;
+                    }
+                }
+            else if (otherEvent.Date1 != null)
+                {
+                return false;
+                }
+
+            if (this.Date2 != null)
+                {
+                if (!this.Date2.Equals(otherEvent.Date2))
+                    {
+                    return false;
+                    }
+                }
+            else if (otherEvent.Date2 != null)
+                {
+                return false;
+                }
+
+            if (this.Place != null)
+                {
+                if (!this.Place.Equals(otherEvent.Place))
+                    {
+                    return false;
+                    }
+                }
+            else if (otherEvent.Place != null)
+                {
+                return false;
+                }
+
+            return true;
+            }
         }
     }

@@ -24,6 +24,38 @@ namespace FamilyTree
 
         public enum SexEnum { Male, Female };
             
-        public SexEnum Sex {get; set;}
+        public SexEnum Sex { get; set; }
+
+        public override bool Equals(object obj)
+            {
+            Person otherPerson = obj as Person;
+
+            if (otherPerson == null)
+                {
+                return false;
+                }
+
+            if (this.Sex != otherPerson.Sex)
+                {
+                return false;
+                }
+
+            if (!this.Name.Equals(otherPerson.Name))
+                {
+                return false;
+                }
+
+            if ((this.Birth != null) && (!this.Birth.Equals(otherPerson.Birth)))
+                {
+                return false;
+                }
+
+            if ((this.Death != null) && (!this.Death.Equals(otherPerson.Death)))
+                {
+                return false;
+                }
+
+            return true;
+            }
         }
     }

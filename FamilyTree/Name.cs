@@ -158,5 +158,21 @@ namespace FamilyTree
 
             return name;
             }
+        public override bool Equals(object obj)
+            {
+            Name otherName = obj as Name;
+
+            if (otherName == null)
+                {
+                return false;
+                }
+
+            if (this.Canonical != otherName.Canonical)
+                {
+                return false;
+                }
+
+            return true;
+            }
         }
     }

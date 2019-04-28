@@ -76,7 +76,7 @@ namespace FamilyTree
             return builder.ToString();
             }
 
-        public override bool Equals(object obj)
+        public bool SameAs(object obj)
             {
             Date otherDate = obj as Date;
             if (otherDate == null)

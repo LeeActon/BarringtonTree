@@ -5,6 +5,21 @@ namespace FamilyTree
     {
     public class Family
         {
+
+        private static int idCur = 1;
+        private String id = null;
+        public String Id
+            {
+            get
+                {
+                if (this.id == null)
+                    {
+                    this.id = String.Format("F{0}", idCur++);
+                    }
+
+                return this.id;
+                }
+            }
         public Person Husband { get; set; }
         public Person Wife { get; set; }
 

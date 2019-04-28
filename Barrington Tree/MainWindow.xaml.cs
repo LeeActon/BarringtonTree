@@ -27,8 +27,8 @@ namespace Barrington_Tree
 
             Importer importer = new Importer();
 
-            importer.Load(@"C:\Users\Lee\OneDrive\Documents\Ancestry\barrington.txt");
-            importer.ExportGEDCOM(@"C:\Users\Lee\OneDrive\Documents\Ancestry\barrington.ged");
+            importer.Load(@"data\barrington.txt");
+            importer.ExportGEDCOM(@"data\barrington.ged");
             }
         }
     }

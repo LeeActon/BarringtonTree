@@ -26,12 +26,14 @@ namespace BarringtonFile
         private int lineNumber = 0;
 
         String datePlaceRegEx =
-            @"\s(probably\s)?(a twin\s)?(in\s)?(or about\s)?"
+            @"\s(early,?\s)?(at birth or in extreme infancy,\s)?(an infant,?\s)?(in infancy,?\s)?(within a short time of birth,?\s)?(unmarried,?\s)?(probably\s)?(a twin\s)?(in\s)?(or about\s)?"
                 + @"(?<ireland>Ireland)?"  // Special case "born in Ireland
                 + @"(?<day1>\d{1,4})?\s*"
                 + @"(?<month1a>[A-Za-z]{3,9})?\s*"
                 + @"(,?\s*(or)?\s+(?<month1b>[A-Za-z]{3,9}))?\s*"
                 + @"(,?\s*(or)?\s+(?<month1c>[A-Za-z]{3,9}))?\s*"
+                + @"(,?\s*(or)?\s+(?<month1d>[A-Za-z]{3,9}))?\s*"
+                + @"(,?\s*(or)?\s+(?<month1e>[A-Za-z]{3,9}))?\s*"
                 + @"(?<year1>\d{4})?\s*"
                 + @"(?<julian1>\(Old Style or Julian\))?\s*"
                 + @"(\(New Style or Gregorian\))?\s*"
@@ -45,16 +47,32 @@ namespace BarringtonFile
                 + @"(\(New Style or Gregorian\))?\s*"
                 + @"(\(according to[^\)]*\))?\s*"
                 + @"(\(depending [^\)]*\))?\s*"
-                + @"(probably\s*)"
-                + @"(at\s)?(or near\s)?(?<place>[^;]*);?"/**/
+                + @"(probably\s*)?"
+                + @"(in\s)?(at\s)?(or near\s)?(?<place>[^;]*);?"/**/
             ;
 
-        private int idPerson = 1;
-        private Person NewPerson(Name name, String text, Person.SexEnum sex)
-            {
-            Person person = new Person(name, text, sex);
+        String childNameRegex = @"(?<bastard>\*\s)?(probably\s)?(?<name>[^,;]*)[,;]";
 
-            person.Id = String.Format("P{0}", this.idPerson++);
+        private Person NewPerson(String text)
+            {
+            String name = null;
+
+            Regex regex = new Regex(this.childNameRegex);
+            Match matchName = regex.Match(text.StripCommentsAndExtraWhitespace());
+            if (matchName.Groups["name"].Success)
+                {
+                name = matchName.Groups["name"].Value.Trim();
+                }
+            else
+                {
+                Log("Child name not found: {0}", true, false, text);
+                }
+
+            return NewPerson(new Name(name), text);
+            }
+        private Person NewPerson(Name name, String text)
+            {
+            Person person = new Person(name, text);
 
             person.Birth = ParseEvent("born", text);
             person.Death = ParseEvent("died", text);
@@ -87,7 +105,7 @@ namespace BarringtonFile
                 {
                 foreach (Person curPerson in peopleWithName)
                     {
-                    if (person.Equals(curPerson))
+                    if (person.SameAs(curPerson))
                         {
                         return curPerson;
                         }
@@ -125,7 +143,8 @@ namespace BarringtonFile
             Match match = regex.Match(text);
             if (match.Success)
                 {
-                Log("match: ({0}-{1}) /{2}/", true, true, match.Index, match.Length, match.Value);
+                bool enableLog = false;
+                Log("match: ({0}-{1}) /{2}/", enableLog, true, match.Index, match.Length, match.Value);
                 StringBuilder builder = new StringBuilder();
                 Group day1 = match.Groups["day1"];
                 Group month1a = match.Groups["month1a"];
@@ -139,39 +158,39 @@ namespace BarringtonFile
                 Group ireland = match.Groups["ireland"];
                 if (day1.Success)
                     {
-                    Log("    day1 : {0}", true, true, day1.Value);
+                    Log("    day1 : {0}", enableLog, true, day1.Value);
                     }
                 if (month1a.Success)
                     {
-                    Log("    month1a : {0}", true, true, month1a.Value);
+                    Log("    month1a : {0}", enableLog, true, month1a.Value);
                     }
                 if (month1b.Success)
                     {
-                    Log("    month1b : {0}", true, true, month1b.Value);
+                    Log("    month1b : {0}", enableLog, true, month1b.Value);
                     }
                 if (month1c.Success)
                     {
-                    Log("    month1c : {0}", true, true, month1c.Value);
+                    Log("    month1c : {0}", enableLog, true, month1c.Value);
                     }
                 if (year1.Success)
                     {
-                    Log("    year1 : {0}", true, true, year1.Value);
+                    Log("    year1 : {0}", enableLog, true, year1.Value);
                     }
                 if (day2.Success)
                     {
-                    Log("   day2 : {0}", true, true,day2.Value);
+                    Log("   day2 : {0}", enableLog, true,day2.Value);
                     }
                 if (month2.Success)
                     {
-                    Log("    month2 : {0}", true, true, month2.Value);
+                    Log("    month2 : {0}", enableLog, true, month2.Value);
                     }
                 if (year2.Success)
                     {
-                    Log("    year2 : {0}", true, true, year2.Value);
+                    Log("    year2 : {0}", enableLog, true, year2.Value);
                     }
                 if (placeGroup.Success)
                     {
-                    Log("    place : {0}", true, true, placeGroup.Value);
+                    Log("    place : {0}", enableLog, true, placeGroup.Value);
                     }
 
                 Date date1 = null;
@@ -179,7 +198,7 @@ namespace BarringtonFile
                 String place = null;
                 if (ireland.Success)
                     {
-                    place = "ireland";
+                    place = "Ireland";
                     }
                 else
                     {
@@ -192,7 +211,7 @@ namespace BarringtonFile
                             // day1 is actually the year
                             date1 = new Date(null, null, day1.Value, julian1);
                             }
-                        else
+                        else if (year1.Success)
                             {
                             date1 = new Date(day1.Value, month1a.Value, year1.Value, julian1);
                             }
@@ -204,7 +223,7 @@ namespace BarringtonFile
                             // day2 is actually the year
                             date2 = new Date(null, null, day2.Value, julian2);
                             }
-                        else
+                        else if (year2.Success)
                             {
                             date2 = new Date(day2.Value, month2.Value, year2.Value, julian2);
                             }
@@ -309,7 +328,8 @@ namespace BarringtonFile
                 return;
                 }
 
-            family.Husband = NewPerson(husbandName, husbandLine, Person.SexEnum.Male);
+            family.Husband = NewPerson(husbandName, husbandLine);
+            family.Husband.Sex = Person.SexEnum.Male;
 
             String wifeLine = ReadLine();
             if (wifeLine == endOfFamilyMarker)
@@ -325,7 +345,8 @@ namespace BarringtonFile
                 }
             else
                 {
-                family.Wife = NewPerson(wifeName, wifeLine, Person.SexEnum.Female);
+                family.Wife = NewPerson(wifeName, wifeLine);
+                family.Wife.Sex = Person.SexEnum.Female;
                 }
 
             while (!this.reader.EndOfStream)
@@ -361,23 +382,28 @@ namespace BarringtonFile
                             }
                         }
 
-#if false
-                    foreach (KeyValuePair<String, List<Family>> pair in this.families)
-                        {
-                        foreach(Family family in pair.Value)
-                            {
-                            ConnectParents(family);
-                            }
-                        }
-#else
                     foreach (KeyValuePair<String,Person> pair in this.peopleById)
                         {
                         ConnectParents(pair.Value);
                         }
-#endif
+
+                    foreach (KeyValuePair<String, List<Family>> pair in this.families)
+                        {
+                        foreach(Family family in pair.Value)
+                            {
+                            ParseChildData(family);
+                            }
+                        }
                     }
                 }
+#if true // TODO: Remove when we know all the suffixes
+            Console.WriteLine("Suffixes");
+            foreach (String suffix in Name.Suffixes)
+                {
+                Console.WriteLine("    " + suffix);
+                }
             }
+#endif
 
 #if false
         private void ConnectParents(Family family)
@@ -425,8 +451,7 @@ namespace BarringtonFile
                         {
                         Family parentFamily = parentFamilies[0];
                         parentFamily.Children.Add(person);
-                        person.Father = parentFamily.Husband;
-                        person.Mother = parentFamily.Wife;
+                        person.Family = parentFamily;
                         }
                     }
                 else
@@ -447,8 +472,22 @@ namespace BarringtonFile
                 }
             }
 
-        private void ParseChildData(Family family, String data)
+        private void ParseChildData(Family family)
             {
+            foreach (String s in family.ChildrenLines)
+                {
+                Person child = NewPerson(s);
+                if (family.Children.Contains(child))
+                    {
+                    Log("Child exists: {0}", true, false, child.Name.Fullname);
+                    }
+                else
+                    {
+                    Log("Child added: {0}", true, false, child.Name.Fullname);
+                    child.Family = family;
+                    family.Children.Add(child);
+                    }
+                }
             }
 
         private String FlipName(String name)
@@ -502,6 +541,11 @@ namespace BarringtonFile
                                 break;
 
                             }
+                        if (person.Family != null)
+                            {
+                            writer.WriteLine("1 FAMC @{0}@", person.Family.Id);
+                            }
+
                         if (person.Birth != null)
                             {
                             writer.WriteLine("1 BIRT");
@@ -529,16 +573,13 @@ namespace BarringtonFile
                                 }
                             }
                         }
-                    int idFamily = 1;
                     foreach (KeyValuePair<String, List<Family>> pair in this.families)
                         {
                         List<Family> families = pair.Value;
 
-                        if (families.Count == 1)
+                        foreach (Family family in families)
                             {
-                            Family family = families[0];
-
-                            writer.WriteLine("0 @F{0}@ FAM", idFamily++);
+                            writer.WriteLine("0 @{0}@ FAM", family.Id);
                             writer.WriteLine("1 HUSB @{0}@", family.Husband.Id);
                             writer.WriteLine("1 WIFE @{0}@", family.Wife.Id);
                             foreach (Person child in family.Children)
@@ -548,6 +589,7 @@ namespace BarringtonFile
                             }
                         }
                     writer.WriteLine("0 TRLR");
+                    writer.Flush();
                     }
                 }
             }

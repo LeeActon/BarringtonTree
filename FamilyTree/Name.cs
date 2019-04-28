@@ -3,14 +3,54 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace FamilyTree
     {
     public class Name
         {
 
+        private String nameRegex = @"(?<surname>(\bvon\s)?\b[\w\-\']+\b)(\s(?<suffix>Jr.|Sr.|II|III))?$";
+        private String explicitNameRegex = @"^=(?<givenNames>.*)\s*/(?<surname>.*)/\s?(?<suffix>.*)";
+        //private String nameRegex = @"(?<givenNames>(\-\-\-|.+\b\.?))\s+(?<lastName>(\bvon\s)?\b[\w\-\']+\b)(\s(?<suffix>Jr.|Sr.|II|III))?$";
+
         public Name()
             {
+            }
+
+        public Name(String name)
+            {
+            bool nameSet = false;
+            if (name[0] == '=')
+                {
+                Regex regex = new Regex(this.explicitNameRegex, RegexOptions.IgnoreCase);
+                Match matchName = regex.Match(name);
+                if (matchName.Success)
+                    {
+                    GivenNames = matchName.Groups["givenNames"].Value.Trim();
+                    Surname = matchName.Groups["surname"].Value.Trim();
+                    Suffix = matchName.Groups["suffix"].Value.Trim();
+                    nameSet = true;
+                    }
+                }
+            else
+                {
+                Regex regex = new Regex(this.nameRegex, RegexOptions.IgnoreCase);
+                Match matchName = regex.Match(name);
+                if (matchName.Success)
+                    {
+                    Group surnameGroup = matchName.Groups["surname"];
+                    GivenNames = name.Substring(0, surnameGroup.Index).Trim();
+                    Surname = surnameGroup.Value.Trim();
+                    Suffix = matchName.Groups["suffix"].Value.Trim();
+                    nameSet = true;
+                    }
+                }
+
+            if (!nameSet)
+                {
+                this.fullName = name;
+                }
             }
 
         private String fullName = null;
@@ -22,12 +62,12 @@ namespace FamilyTree
                     {
                     StringBuilder builder = new StringBuilder();
                     bool insertSpace = false;
-                    if (Prefix != null)
+                    if (!String.IsNullOrEmpty(Prefix))
                         {
                         builder.Append(Prefix);
                         insertSpace = true;
                         }
-                    if (GivenNames != null)
+                    if (!String.IsNullOrEmpty(GivenNames))
                         {
                         if (insertSpace)
                             {
@@ -36,7 +76,7 @@ namespace FamilyTree
                         builder.Append(GivenNames);
                         insertSpace = true;
                         }
-                    if (Surname != null)
+                    if (!String.IsNullOrEmpty(Surname))
                         {
                         if (insertSpace)
                             {
@@ -45,7 +85,7 @@ namespace FamilyTree
                         builder.Append(Surname);
                         insertSpace = true;
                         }
-                    if (Suffix != null)
+                    if (!String.IsNullOrEmpty(Suffix))
                         {
                         if (insertSpace)
                             {
@@ -104,9 +144,21 @@ namespace FamilyTree
                 }
             }
 
+#if true // TODO: Remove after we know all the suffixes
+        public static List<String> Suffixes = new List<String>();
+        private static void AddSuffix(String suffix)
+            {
+            if (!Suffixes.Contains(suffix))
+                {
+                Suffixes.Add(suffix);
+                }
+            }
+#endif
+
         public String Surname { get; set; }
         public String GivenNames { get; set; }
         public String Prefix { get; set; }
+
         public String Suffix { get; set; }
 
         public String Canonical
@@ -116,26 +168,6 @@ namespace FamilyTree
                 return Fullname.ToUpper();
                 }
             }
-#if false
-        public static String Unflip(String name)
-            {
-            String strippedName = name.StripCommentsAndExtraWhitespace();
-            String[] nameParts = strippedName.Split(',');
-
-            if (nameParts.Length == 1)
-                {
-                return name.Trim();
-                }
-
-            String newName = nameParts[1].Trim() + " " + nameParts[0].Trim();
-            if ((nameParts.Length == 3) && !String.IsNullOrWhiteSpace(nameParts[2]))
-                {
-                newName = newName + " " + nameParts[2];
-                }
-
-            return newName.ToUpper();
-            }
-#endif
         public static Name ParseSurnameFirst(String flippedName)
             {
             String[] nameParts = flippedName.StripCommentsAndExtraWhitespace().Split(',');
@@ -153,12 +185,13 @@ namespace FamilyTree
                 if ((nameParts.Length == 3) && !String.IsNullOrWhiteSpace(nameParts[2]))
                     {
                     name.Suffix = nameParts[2].Trim();
+                    AddSuffix(name.Suffix); //TODO: Remove
                     }
                 }
 
             return name;
             }
-        public override bool Equals(object obj)
+        public bool SameAs(object obj)
             {
             Name otherName = obj as Name;
 

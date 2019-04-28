@@ -34,6 +34,8 @@ namespace FamilyTree
             if (date1 != null || date2 != null || place != null)
                 return new Event(date1, date2, place);
 
+            Console.WriteLine("Event with no dates or place: '{0}'");
+
             return null;
             }
 
@@ -56,7 +58,7 @@ namespace FamilyTree
             return dateString;
             }
 
-        public override bool Equals(object obj)
+        public bool SameAs(object obj)
             {
             Event otherEvent = obj as Event;
 
@@ -65,7 +67,7 @@ namespace FamilyTree
 
             if (this.Date1 != null)
                 {
-                if (!this.Date1.Equals(otherEvent.Date1))
+                if (!this.Date1.SameAs(otherEvent.Date1))
                     {
                     return false;
                     }
@@ -77,7 +79,7 @@ namespace FamilyTree
 
             if (this.Date2 != null)
                 {
-                if (!this.Date2.Equals(otherEvent.Date2))
+                if (!this.Date2.SameAs(otherEvent.Date2))
                     {
                     return false;
                     }
@@ -87,16 +89,21 @@ namespace FamilyTree
                 return false;
                 }
 
-            if (this.Place != null)
+            if (!String.IsNullOrEmpty(this.Place))
                 {
                 if (!this.Place.Equals(otherEvent.Place))
                     {
-                    return false;
+                    // Place can be messy... ignore it for now
+                    //return false;
+                    Console.WriteLine("Places don't match ({0}", (Date1 == null) ? "unknown" : this.Date1.ToString());
+                    Console.WriteLine(">>>{0}", this.Place);
+                    Console.WriteLine(">>>{0}", otherEvent.Place);
                     }
                 }
-            else if (otherEvent.Place != null)
+            else if (!String.IsNullOrEmpty(otherEvent.Place))
                 {
-                return false;
+                // Place can be messy... ignore it for now
+                //return false;
                 }
 
             return true;
